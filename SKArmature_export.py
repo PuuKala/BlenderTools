@@ -21,9 +21,6 @@ def apply_export_frames():
     bpy.ops.screen.frame_jump(end=True)
     last_frame_number = bpy.data.scenes[0].frame_current
     
-    saved_properties = None
-    saved_modifier = None
-    
     if len(bpy.context.selected_objects) != 1:
         print("SKArmature ERROR: Please select only 1 object! Objects selected:", bpy.context.selected_objects)
         return
@@ -33,42 +30,22 @@ def apply_export_frames():
         bpy.ops.ed.undo_push()
         bpy.data.scenes['Scene'].frame_set(i + 1)
         modified_object = bpy.context.selected_objects[0]
+
         print("SKArmature DEBUG: Processing frame no.", bpy.data.scenes[0].frame_current)
+
+        modifier_found = False
         for modifier in modified_object.modifiers:
             if modifier.type == 'ARMATURE':
-                print("SKArmature DEBUG: Modifier found frame no.", bpy.data.scenes[0].frame_current)
-                #bpy.ops.ed.undo_push()
                 bpy.ops.object.modifier_apply(modifier=modifier.name)
-                print("SKArmature DEBUG: Modifier applied frame no.", bpy.data.scenes[0].frame_current)
+                modifier_found = True
                 break
-        """
-        for obj in bpy.context.selected_objects:
-            bpy.context.view_layer.objects.active = obj
-            #modifier_found = False
-            if saved_properties:
-                new_modifier = obj.modifiers.new('Armature', 'ARMATURE')
-                for property in saved_properties:
-                    setattr(new_modifier, saved_
-            for modifier in obj.modifiers:
-                if modifier.type == 'ARMATURE':
-                    saved_modifier = modifier
-                    #modifier_found = True
-                    #bpy.ops.object.modifier_set_active(modifier=modifier.name)
-                    saved_property_names = [property.identifier for property in modifier.bl_rna.properties
-                                        if not property.is_readonly]
-                    bpy.ops.object.modifier_apply(modifier=modifier.name)
-                    break
-        """
-            
-            #if not modifier_found:
-            #    print("SKArmature ERROR: No ARMATURE modifier found in", obj.name)
-            #    return
-        
-        print("SKArmature DEBUG: Exporting frame no.", bpy.data.scenes[0].frame_current)
+
+        if not modifier_found:
+            print("SKArmature ERROR: ARMATURE modifier not found! Object modifiers:", modified_object.modifiers)
+            return
+
         bpy.ops.export_scene.fbx(filepath=folder_name + '\\frame_' + str(i + 1) + '.fbx')
-        print("SKArmature DEBUG: Undoing frame no.", bpy.data.scenes[0].frame_current)
         bpy.ops.ed.undo()
-        print("Jumping to frame", bpy.data.scenes['Scene'].frame_current, "+", i, "+", 1)
 
 
 ### Menu entry
@@ -85,8 +62,6 @@ def aemenu_draw(self, context):
     self.layout.operator(ApplyExportOperator.bl_idname)
 
 def register():
-    #aemenu = next(iter([i for i in bpy.types.TOPBAR_MT_file._dyn_ui_initialize() if i.__name__ == aemenu_draw.__name__]), None)
-    #if not aemenu:
     bpy.utils.register_class(ApplyExportOperator)
     bpy.types.TOPBAR_MT_file.append(aemenu_draw)
 
